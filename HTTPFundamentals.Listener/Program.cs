@@ -29,18 +29,16 @@ namespace HTTPFundamentals.Listener
             var listener = new HttpListener();
             listener.Prefixes.Add(BaseAddress);
 
+            // Get classes with HttpServiceAttribute
             var types = Assembly.GetExecutingAssembly().GetTypes().Where(t => t.IsDefined(typeof(HttpServiceAttribute)));
             foreach (var type in types)
             {
                 var service = Activator.CreateInstance(type);
-                var methods = type.GetMethods().Where(method => method.IsPublic);
+                // Get public methods with HttpServiceEndpointAttribute
+                var methods = type.GetMethods().Where(method => method.IsPublic && method.IsDefined(typeof(HttpServiceEndpointAttribute)));
                 foreach (var method in methods)
                 {
                     var attribute = method.GetCustomAttribute(typeof(HttpServiceEndpointAttribute));
-                    if (attribute == null)
-                    {
-                        continue;
-                    }
                     var endpointAttribute = attribute as HttpServiceEndpointAttribute;
                     var routePath = endpointAttribute.RoutePath.Trim(ForwardSlash);
 
@@ -51,7 +49,7 @@ namespace HTTPFundamentals.Listener
                         Service = service,
                     };
                     Endpoints.Add(endpoint);
-                    Console.WriteLine($"Endpoind added: {BaseAddress}{endpoint.RoutePath}; Method {endpoint.MethodInfo.Name} in service {type.Name}");
+                    Console.WriteLine($"Endpoind added: {BaseAddress}{endpoint.RoutePath}; Method {endpoint.MethodInfo.Name} from service {type.Name}");
                 }
             }
             listener.Start();
